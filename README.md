@@ -13,9 +13,32 @@ Football Statistical Parameter Mapping (FSPM) is a sophisticated tool built with
 ### Prerequisites
 To operate FSPM, ensure you have Python installed along with key libraries such as PyQt5, NumPy, and Matplotlib. Using a virtual environment is recommended for managing these dependencies.
 
-### Steps
+# FSPM
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://your-repository-url-here
-   cd FSPM
+This is a package for FSPM.
+
+## Installation
+
+1. Clone the repository:
+
+    ```sh
+    git clone https://github.com/micheledeantoni/FSPM.git
+    cd FSPM
+    ```
+
+2. (Optional) Create and activate a virtual environment:
+
+    ```sh
+    python -m venv env
+    source env/bin/activate  # On Windows use `env\Scripts\activate`
+    ```
+
+3. Install the package and its dependencies:
+
+    ```sh
+    pip install .
+    ```
+
+## Usage
+
+  In order to lauch the GUI use the command: fspmgui
