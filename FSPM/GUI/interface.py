@@ -49,15 +49,6 @@ class GraphPopup(QDialog):
         self.canvas.draw()
         self.resize(int(fig.get_size_inches()[0] * fig.dpi), int(fig.get_size_inches()[1] * fig.dpi))
 
-# Usage example:
-# dialog = GraphPopup(data, plot_type='general')  # To show general heatmap
-# dialog.show()
-
-# dialog = GraphPopup(data, plot_type='result')  # To show result-specific heatmap
-# dialog.show()
-
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -105,6 +96,11 @@ class DataTab(QWidget):
             self.selection_menu.currentIndexChanged.connect(self.selection_changed)  # Connect signal
             layout.addWidget(self.selection_menu)
 
+            self.type_selection = QComboBox()
+            self.type_selection.setEnabled(False)
+            self.type_selection.currentIndexChanged.connect(self.type_changed)
+            layout.addWidget(self.type_selection)
+
             self.main_button = QPushButton(button_text)
             self.main_button.setEnabled(False)  # Disable until CSV is loaded
             self.main_button.clicked.connect(self.preprocess_data_stub)
@@ -146,6 +142,7 @@ class DataTab(QWidget):
             print("CSV loaded successfully:", data)
             self.data_frame = data['all'][0]
             self.update_selection_menu()
+            self.update_type_menu()
             self.main_button.setEnabled(True)
             self.filter_button.setEnabled(True)
 
@@ -154,6 +151,12 @@ class DataTab(QWidget):
         self.selection_menu.addItems(['Entire Team'])
         self.selection_menu.addItems(self.data_frame.playerName.unique())  # Example options
         self.selection_menu.setEnabled(True)
+
+    def update_type_menu(self):
+        self.type_selection.clear()
+        self.type_selection.addItems(['All Touches'])
+        self.type_selection.addItems(self.data_frame.type.unique())
+        self.type_selection.setEnabled(True)
 
     def update_parameter_menu (self):
         self.parameter_menu.clear()
@@ -165,6 +168,10 @@ class DataTab(QWidget):
         self.selected_option = self.selection_menu.currentText()
         print(f"Selected option: {self.selected_option}")
 
+    def type_changed(self, index):
+        self.selected_type = self.type_selection.currentText()
+        print(f"Selected type: {self.selected_type}")
+
     def parameter_changed (self, index):
         self.selected_parameter =  self.parameter_menu.currentText()
         print (f"Selcted parameter {self.selected_parameter}")
@@ -175,17 +182,29 @@ class DataTab(QWidget):
         # First, ensure there is data loaded
         if self.data_frame is not None:
             selected_option = self.selection_menu.currentText()  # Get the currently selected option text
+            selected_type = self.type_selection.currentText()    # Get the currently selected type text
 
             # Check if the selected option is 'Entire Team'
             if selected_option == 'Entire Team':
                 print("Preprocessing entire team data...")
-                self.data = self.data_frame  # Use the entire data frame if the entire team is selected
+
+                # Filter by type if 'Entire Team' is selected
+                if selected_type != 'All Touches':  # Assuming 'All' means no filter on type
+                    self.data = self.data_frame[self.data_frame['type'] == selected_type]
+                else:
+                    self.data = self.data_frame
+
                 self.main_window.set_shared_data('data', self.data)
 
             else:
                 print(f"Preprocessing data for {selected_option}...")
-                # Assuming 'playerName' is a column in your DataFrame where player names are stored
-                self.data = self.data_frame[self.data_frame['playerName'] == selected_option]
+
+                # Filter by playerName and type
+                if selected_type != 'All Touches':  # Assuming 'All' means no filter on type
+                    self.data = self.data_frame[(self.data_frame['playerName'] == selected_option) & (self.data_frame['type'] == selected_type)]
+                else:
+                    self.data = self.data_frame[self.data_frame['playerName'] == selected_option]
+
                 self.main_window.set_shared_data('data', self.data)
 
             # Now proceed with preprocessing the data
@@ -193,6 +212,7 @@ class DataTab(QWidget):
             print("Preprocessing complete")
         else:
             print("No data loaded. Please load a CSV file first.")
+
 
     def preprocess_data(self, df):
         binsize = (20, 20)
