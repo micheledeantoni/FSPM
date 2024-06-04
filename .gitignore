@@ -1,2 +1,5 @@
 FSPM/raw_data/
 FSPM/nb.ipynb
+dist
+build
+fspmgui.spec
