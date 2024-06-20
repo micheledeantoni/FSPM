@@ -60,10 +60,8 @@ def data_loader (fpath, toi = False):
     df = add_result_column(df)
     return data_organizer(df)
 
-def filter_pass_data_by_top_players(data):
+def filter_pass_data_by_top_players(pass_data, all_data):
     # Create a backup of the original data
-    all_data = data['all'][0]
-    pass_data = data['Pass'][0]
     backup_data = all_data.copy()
 
     # Prepare pass data with recipient names
