@@ -1,4 +1,4 @@
-from utilities import conn_data_preparation
+from FSPM.utilities import conn_data_preparation
 import numpy as np
 import pandas as pd
 
