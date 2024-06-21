@@ -59,3 +59,55 @@ def data_loader (fpath, toi = False):
     df = df.dropna(subset=['playerName'])
     df = add_result_column(df)
     return data_organizer(df)
+
+def filter_pass_data_by_top_players(pass_data, all_data):
+    # Create a backup of the original data
+    backup_data = all_data.copy()
+
+    # Prepare pass data with recipient names
+    pass_data['pass_recipient_name'] = pass_data['playerName'].shift(-1)
+    pass_data.dropna(subset=['pass_recipient_name'], inplace=True)
+
+    # Calculate play times
+    play_times = []
+
+    for match in backup_data['matchId'].unique():
+        match_data = backup_data[backup_data['matchId'] == match].copy()
+
+        for index, row in match_data.iterrows():
+            if row['type'] == 'SubstitutionOff':
+                play_time = row['expandedMinute']
+            elif row['type'] == 'SubstitutionOn':
+                play_time = 90 - row['expandedMinute']
+            else:
+                play_time = 90
+
+            play_times.append({
+                'matchId': match,
+                'playerName': row['playerName'],
+                'play_time': play_time
+            })
+
+    # Create a DataFrame for play times
+    play_times_df = pd.DataFrame(play_times)
+
+    # Sum play times for each player in each match
+    total_play_times = play_times_df.groupby(['matchId', 'playerName'])['play_time'].sum().reset_index()
+
+    # Identify top 11 players for each match
+    top_11_players = total_play_times.groupby('matchId').apply(
+        lambda x: x.nlargest(11, 'play_time')).reset_index(drop=True)
+
+    # Get list of top 11 players for each match
+    top_11_player_names = top_11_players[['matchId', 'playerName']]
+
+    # Filter pass data to include only top 11 players
+    filtered_pass_data = pass_data.merge(
+        top_11_player_names, how='inner', on=['matchId', 'playerName']
+    )
+    filtered_pass_data = filtered_pass_data.merge(
+        top_11_player_names.rename(columns={'playerName': 'pass_recipient_name'}),
+        how='inner', on=['matchId', 'pass_recipient_name']
+    )
+
+    return filtered_pass_data
