@@ -53,11 +53,12 @@ def data_organizer(df):
 def data_loader (fpath, toi = False):
     #toi: team of interest
     df = pd.read_csv(fpath)
-    if toi:
-        id = df.teamId.value_counts().index[0]
-        df = df[df['teamId'] == id]
+    home_id = df.teamId.value_counts().index[0]
     df = df.dropna(subset=['playerName'])
+    df = add_goals_columns(df)
     df = add_result_column(df)
+    if toi:
+        df = df[df['teamId'] == home_id]
     return data_organizer(df)
 
 def filter_pass_data_by_top_players(pass_data, all_data):
@@ -111,3 +112,40 @@ def filter_pass_data_by_top_players(pass_data, all_data):
     )
 
     return filtered_pass_data
+
+def add_goals_columns(df):
+    # Create a copy of the dataframe to avoid modifying the original dataframe
+    df_copy = df.copy()
+
+    # Define a function to add the suffix based on the period value
+    def add_suffix(row):
+        if row['period'] == 'FirstHalf':
+            return int(f"{row['matchId']}1")
+        elif row['period'] == 'SecondHalf':
+            return int(f"{row['matchId']}2")
+        else:
+            return row['matchId']
+
+    # Apply the function to each row and create a new matchId column with the suffix
+    df_copy['matchId'] = df_copy.apply(add_suffix, axis=1)
+
+    # Determine the most frequent team_id in the entire DataFrame
+    most_frequent_team = df_copy['teamId'].mode()[0]
+
+    # Initialize new columns with zero
+    df_copy['goals_scored_p'] = 0
+    df_copy['goals_conceded_p'] = 0
+
+    # Iterate through the dataframe to update the goals columns
+    for idx, row in df_copy.iterrows():
+        if row['type'] == 'Goal':
+            if row['teamId'] == most_frequent_team:
+                df_copy.at[idx, 'goals_scored_p'] = 1
+            else:
+                df_copy.at[idx, 'goals_conceded_p'] = 1
+
+    # Sum the goals per matchId
+    df_copy['goals_scored_p'] = df_copy.groupby('matchId')['goals_scored_p'].transform('sum')
+    df_copy['goals_conceded_p'] = df_copy.groupby('matchId')['goals_conceded_p'].transform('sum')
+
+    return df_copy
